@@ -45,8 +45,8 @@ async function getCURL(url, method = 'GET', headers = {}, body = null, returnJso
 
     console.log('[.] MENJALANKAN AUTO CLEAR TASK, DELAY ' + hours + ' JAM SETELAH CEK ' + dataList.length + ' AKUN...\n');
     while (true) {
-        for (let i = 0; i < dataList.length; i += 1) {
-            const batch = dataList.slice(i, i + 1);
+        for (let i = 0; i < dataList.length; i += 100) {
+            const batch = dataList.slice(i, i + 100);
             const batchPromises = batch.map(async (token, batchIndex) => {
             const no = i + batchIndex + 1;
             // Parsing query string menggunakan URLSearchParams
