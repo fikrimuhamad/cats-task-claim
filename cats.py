@@ -1,96 +1,136 @@
-import time
-import requests
+import fetch from 'node-fetch';
+import fs from 'fs';
 
-# Fungsi untuk membaca file query.txt yang berisi header authorization untuk banyak akun
-def read_authorizations(file_path):
-    with open(file_path, 'r') as f:
-        lines = f.readlines()
-    return [line.strip() for line in lines]
+function getToken(filename) {
+    const data = fs.readFileSync(filename, 'utf8');
+    return data.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+}
+    
+function number(number, decimals = 0, decPoint = ',', thousandsSep = '.') {
+    const n = parseFloat(number).toFixed(decimals);
+    const parts = n.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSep);
+    return parts.join(decPoint);
+}
 
-# Fungsi untuk mendapatkan informasi user dan menampilkan data username dan totalRewards
-def process_user_info(authorization_header, account_number):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, seperti Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-        "Content-Type": "application/json",
-        "Authorization": f"tma {authorization_header}",
-        "Origin": "https://cats-frontend.tgapps.store"
+async function getCURL(url, method = 'GET', headers = {}, body = null, returnJson = true) {
+    const options = {
+        method,
+        headers,
+    };
+
+    if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+        options.body = JSON.stringify(body);
     }
 
-    response = requests.get("https://cats-backend-wkejfn-production.up.railway.app/user", headers=headers)
+    const response = await fetch(url, options);
+    const data = returnJson ? await response.json() : await response.text();
+    
+    return data;
+}
 
-    if response.status_code == 200:
-        data = response.json()
-        username = data.get('username')
-        total_rewards = data.get('totalRewards')
-        print(f"\n------------------------------------")
-        print(f"AKUN KE#{account_number} ({username}) - {total_rewards} CATS")
-        print(f"------------------------------------")
-    else:
-        print(f"Error fetching user info for account {account_number}: {response.status_code}")
+(async () => {
+    const dataList = getToken('dataAkun.txt');
+    
+    console.log(`-------------------------------`);
+    console.log(` |            MENU            | `);
+    console.log(` [  CATS.BOT AUTO CLEAR TASK  ] `);
+    console.log(`-------------------------------`);
+    console.log();
 
-# Fungsi untuk get daftar / list tasks yang tersedia dan klaim jika belum completed
-def process_tasks(authorization_header):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, seperti Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-        "Content-Type": "application/json",
-        "Authorization": f"tma {authorization_header}",
-        "Origin": "https://cats-frontend.tgapps.store"
+    const delayInput = 85000; //delay dalam 24jam
+    const hours = Math.floor(delayInput / 60 / 60);
+    if ( hours === 0 ){ var minutes = Math.floor(delayInput / 60); }else{ var minutes = Math.floor(hours * 60 / 60); }
+    const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    console.log('[.] MENJALANKAN AUTO CLEAR TASK, DELAY ' + hours + ' JAM SETELAH CEK ' + dataList.length + ' AKUN...\n');
+    while (true) {
+        for (let i = 0; i < dataList.length; i += 1) {
+            const batch = dataList.slice(i, i + 1);
+            const batchPromises = batch.map(async (token, batchIndex) => {
+            const no = i + batchIndex + 1;
+            // Parsing query string menggunakan URLSearchParams
+            const params = new URLSearchParams(token);
+            const user = JSON.parse(decodeURIComponent(params.get('user')));
+            let logMessage = `====================================================
+[[#${no}] MENGAMBIL DATA AKUN: ${user.username} ]\n`;
+            const headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0',
+                'Accept-Encoding': 'gzip, deflate, br, zstd',
+                 'authorization': `tma ${token}`,
+                'origin': 'https://cats-frontend-production.pages.dev'
+            };
+                const infoAkun = await getCURL('https://cats-backend-cxblew-prod.up.railway.app/user', 'GET', headers);
+                if (infoAkun.name == 'Error') {
+                    logMessage += `[x] TOKEN QUERY_ID MOKAD!!\n`;
+
+                } else {
+                    logMessage += `
+[ #.NAME ] : ${infoAkun.firstName ? infoAkun.firstName : ""} ${infoAkun.lastName ? infoAkun.lastName : ""} ( ${infoAkun.id} )
+[ #.BALLANCE ] : ${number(infoAkun.totalRewards)} CATS
+[ #.TG AGE ] : ${number(infoAkun.telegramAge)}\n
+[*] INFORMASI CLAIM TASK:\n`;
+
+                const infoClaim = await getCURL('https://cats-backend-cxblew-prod.up.railway.app/tasks/user', 'GET', headers);
+                if (infoClaim) {
+                    if (infoClaim.tasks && Array.isArray(infoClaim.tasks)) {
+                        for (const task of infoClaim.tasks) {
+                            if (task.completed === false) {
+                                // Auto claim untuk setiap tugas
+                                try {
+                                    const claimTask = await getCURL(`https://cats-backend-cxblew-prod.up.railway.app/tasks/${task.id}/complete`, 'POST', headers, {});
+                                    
+                                    if (claimTask.success === true) {
+                                        const infoAkun = await getCURL('https://cats-backend-cxblew-prod.up.railway.app/user', 'GET', headers);
+                                        logMessage += `[#] CLAIM ${task.title.toUpperCase()} GET ${number(task.rewardPoints)} CATS => BERHASIL!! - `;
+                                        logMessage += `${number(infoAkun.totalRewards)} CATS\n`;
+                                    }else if (claimTask.success === false) {
+                                        logMessage += `[#] CLAIM ${task.title.toUpperCase()} GET ${number(task.rewardPoints)} CATS => SKIPP!!\n`;
+                                    }
+                                } catch (error) {
+                                    logMessage += `[!] ERROR CLAIMING TASK ID ${task.id}: ${error.message}\n`;
+                                }
+                            }
+                            
+                        }
+                
+                logMessage += `\n[#] SEMUA TASK BERHASIL DICLAIM!! MENUNGGU TASK BARU!!\n`;
+
+                    }
+                } else if (infoClaim && infoClaim.name === 'Error') {
+                    logMessage += `[x] CLAIM TOKEN MOKAD!!!!\n`;
+                } else {
+                    logMessage += `[x] ERROR!! YGTKTS!!\n`;
+                }
+
+                }
+                console.log(logMessage);
+            });
+            await Promise.all(batchPromises);
+        }
+        console.log(`[${getCurrentTime()}] SEMUA AKUN BERHASIL DIPROSESS, DELAY ${hours} JAM, ${minutes} MENIT...`);
+        await delay(delayInput * 1000);
+        console.clear();
+        console.log(`[${getCurrentTime()}] MEMULAI AUTO CLAIM ${dataList.length} AKUN...\n`);
     }
+})();
 
-    response = requests.get("https://cats-backend-wkejfn-production.up.railway.app/tasks/user", headers=headers)
+function getCurrentTime() {
+    const now = new Date();
+    const options = {
+        timeZone: 'Asia/Jakarta',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    };
 
-    if response.status_code == 200:
-        tasks = response.json().get("tasks", [])
-        for task in tasks:
-            task_id = task.get('id')
-            title = task.get('title')
-            reward_points = task.get('rewardPoints')
-            completed = task.get('completed')
+    const timeFormatter = new Intl.DateTimeFormat('en-GB', options);
+    const timeParts = timeFormatter.formatToParts(now);
 
-            # Cek status completed dan klaim jika belum selesai
-            if not completed:
-                status_claim = f"#ID {task_id} - {title} - GET {reward_points} CATS -"
-                claim_result = claim_task(authorization_header, task_id, status_claim)
-                if claim_result:  # Hanya print jika klaim berhasil
-                    print(claim_result)
-    else:
-        print(f"Error fetching tasks: {response.status_code}")
+    const hours = timeParts.find(part => part.type === 'hour').value;
+    const minutes = timeParts.find(part => part.type === 'minute').value;
+    const seconds = timeParts.find(part => part.type === 'second').value;
 
-# Fungsi untuk klaim task yang tersedia
-def claim_task(authorization_header, task_id, status_claim):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, seperti Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-        "Content-Type": "application/json",
-        "Authorization": f"tma {authorization_header}",
-        "Origin": "https://cats-frontend.tgapps.store"
-    }
-
-    url = f"https://cats-backend-wkejfn-production.up.railway.app/tasks/{task_id}/complete"
-    response = requests.post(url, headers=headers, json={})
-
-    if response.status_code == 200:
-        result = response.json()
-        if result.get('success'):
-            return f"{status_claim} BERHASIL CLAIM!!"
-    return None
-
-# Main function
-def main():
-    while True:
-        # Baca daftar query yang tersedia dari file query.txt
-        authorization_headers = read_authorizations('query.txt')
-        
-        # Proses setiap akun yang tersedia pada file query.txt
-        for account_number, authorization_header in enumerate(authorization_headers, start=1):
-            
-            # Proses get informasi user
-            process_user_info(authorization_header, account_number)
-
-            # Proses get task dan claim tasks
-            process_tasks(authorization_header)
-            print("\nSEMUA TASK SUDAH BERHASIL DICLAIM!!\nMENUNGGU TASK BARU YANG TERSEDIA!!")
-        
-        print("\nDELAY SELAMA 24JAM!!")
-        time.sleep(50000)  # 24 jam dalam detik
-if __name__ == "__main__":
-    main()
+    return `${hours}:${minutes}:${seconds}`;
+}
