@@ -13,25 +13,24 @@
      ```
 
 2. **Buka CMD**: 
-   - Masuk ke direktori tempat file `cats.py` berada. Misalnya:
+   - Masuk ke direktori tempat file `cats.js` berada. Misalnya:
      ```bash
      cd path/to/your/cats_bot_folder
      ```
 
-3. **Jalankan Script**:
-   - Jalankan perintah berikut untuk memulai bot:
+3. **Install Dependency**: 
      ```bash
-     python cats.py
-     ```
-   - Jika Anda menggunakan Python 3, gunakan perintah ini:
-     ```bash
-     python3 cats.py
+     npm install node-fetch fs
      ```
 
-4. **Install Dependency**: 
-   - Jika Anda baru pertama kali menginstall Python atau library, jalankan perintah berikut untuk menginstall library `requests`:
-     ```bash
-     pip install requests
+4. **Jalankan Script**:
+   - Jalankan perintah berikut untuk memulai bot:
+     ```
+     node cats
+     ```
+     atau
+     ```
+     node cats.js
      ```
 
 5. **Auto Claim & Delay**:
