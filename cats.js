@@ -13,6 +13,7 @@ function number(number, decimals = 0, decPoint = ',', thousandsSep = '.') {
     return parts.join(decPoint);
 }
 
+// Fungsi untuk melakukan permintaan HTTP menggunakan fetch
 async function getCURL(url, method = 'GET', headers = {}, body = null, returnJson = true) {
     const options = {
         method,
@@ -24,13 +25,21 @@ async function getCURL(url, method = 'GET', headers = {}, body = null, returnJso
     }
 
     const response = await fetch(url, options);
-    const data = returnJson ? await response.json() : await response.text();
     
-    return data;
+    let data;
+    try {
+        data = returnJson ? await response.json() : await response.text();
+        return {
+            status: response.status,
+            data: data
+        };
+    } catch (error) {
+        data = null; // Jika respons kosong atau tidak bisa diparsing
+    }
 }
 
 (async () => {
-    const dataList = getToken('dataAkun.txt');
+    const dataList = getToken('query.txt');
     
     console.log(`-------------------------------`);
     console.log(` |            MENU            | `);
@@ -60,28 +69,26 @@ async function getCURL(url, method = 'GET', headers = {}, body = null, returnJso
                  'authorization': `tma ${token}`,
                 'origin': 'https://cats-frontend-production.pages.dev'
             };
-                const infoAkun = await getCURL('https://cats-backend-cxblew-prod.up.railway.app/user', 'GET', headers);
-                if (infoAkun.name == 'Error') {
-                    logMessage += `[x] TOKEN QUERY_ID MOKAD!!\n`;
-
-                } else {
+                const infoAkun = await getCURL('https://api.catshouse.club/user', 'GET', headers);
+                if (infoAkun.status == 200) {
+                   
                     logMessage += `
-[ #.NAME ] : ${infoAkun.firstName ? infoAkun.firstName : ""} ${infoAkun.lastName ? infoAkun.lastName : ""} ( ${infoAkun.id} )
-[ #.BALLANCE ] : ${number(infoAkun.totalRewards)} CATS
-[ #.TG AGE ] : ${number(infoAkun.telegramAge)}\n
+[ #.NAME ] : ${infoAkun.data.firstName ? infoAkun.data.firstName : ""} ${infoAkun.data.lastName ? infoAkun.data.lastName : ""} ( ${infoAkun.data.id} )
+[ #.BALLANCE ] : ${number(infoAkun.data.totalRewards)} CATS
+[ #.TG AGE ] : ${number(infoAkun.data.telegramAge)}\n
 [*] INFORMASI CLAIM TASK:\n`;
 
-                const infoClaim = await getCURL('https://cats-backend-cxblew-prod.up.railway.app/tasks/user', 'GET', headers);
+                const infoClaim = await getCURL('https://api.catshouse.club/tasks/user', 'GET', headers);
                 if (infoClaim) {
                     if (infoClaim.tasks && Array.isArray(infoClaim.tasks)) {
                         for (const task of infoClaim.tasks) {
                             if (task.completed === false) {
                                 // Auto claim untuk setiap tugas
                                 try {
-                                    const claimTask = await getCURL(`https://cats-backend-cxblew-prod.up.railway.app/tasks/${task.id}/complete`, 'POST', headers, {});
+                                    const claimTask = await getCURL(`https://api.catshouse.club/tasks/${task.id}/complete`, 'POST', headers, {});
                                     
                                     if (claimTask.success === true) {
-                                        const infoAkun = await getCURL('https://cats-backend-cxblew-prod.up.railway.app/user', 'GET', headers);
+                                        const infoAkun = await getCURL('https://api.catshouse.club/user', 'GET', headers);
                                         logMessage += `[#] CLAIM ${task.title.toUpperCase()} GET ${number(task.rewardPoints)} CATS => BERHASIL!! - `;
                                         logMessage += `${number(infoAkun.totalRewards)} CATS\n`;
                                     }else if (claimTask.success === false) {
@@ -97,8 +104,8 @@ async function getCURL(url, method = 'GET', headers = {}, body = null, returnJso
                 logMessage += `\n[#] SEMUA TASK BERHASIL DICLAIM!! MENUNGGU TASK BARU!!\n`;
 
                     }
-                } else if (infoClaim && infoClaim.name === 'Error') {
-                    logMessage += `[x] CLAIM TOKEN MOKAD!!!!\n`;
+                } else if (infoClaim.status === 400) {
+                    logMessage += `[x] TOKEN QUERY_ID MOKAD!!!!\n`;
                 } else {
                     logMessage += `[x] ERROR!! YGTKTS!!\n`;
                 }
