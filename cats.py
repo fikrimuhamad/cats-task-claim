@@ -78,7 +78,7 @@ def claim_task(authorization_header, task_id):
         if 'name' in result and result['name'] == "Error":
             print("SKIP TASK - MANUAL CLAIM!!")
         else:
-            print(f"[!] QUERY LU MOKAD BOSSKU!!")
+            print(f"[!] QUERY LU MOKAD BOSSKU!! ")
 
 
 # Main function
