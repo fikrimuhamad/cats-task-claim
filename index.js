@@ -45,7 +45,6 @@ async function getCURL(url, method = 'GET', headers = {}, body = null, returnJso
             const batch = dataList.slice(i, i + 1);
             const batchPromises = batch.map(async (token, batchIndex) => {
             const no = i + batchIndex + 1;
-            // Parsing query string menggunakan URLSearchParams
             const params = new URLSearchParams(token);
             const user = JSON.parse(decodeURIComponent(params.get('user')));
             let logMessage = `====================================================
@@ -72,7 +71,7 @@ async function getCURL(url, method = 'GET', headers = {}, body = null, returnJso
                     if (infoClaim.tasks && Array.isArray(infoClaim.tasks)) {
                         for (const task of infoClaim.tasks) {
                             if (task.completed === false) {
-                                // Auto claim untuk setiap tugas
+
                                 try {
                                     const claimTask = await getCURL(`https://api.catshouse.club/tasks/${task.id}/complete`, 'POST', headers, {});
                                     
