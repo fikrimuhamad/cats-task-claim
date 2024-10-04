@@ -13,7 +13,6 @@ function number(number, decimals = 0, decPoint = ',', thousandsSep = '.') {
     return parts.join(decPoint);
 }
 
-// Fungsi untuk melakukan permintaan HTTP menggunakan fetch
 async function getCURL(url, method = 'GET', headers = {}, body = null, returnJson = true) {
     const options = {
         method,
@@ -25,21 +24,13 @@ async function getCURL(url, method = 'GET', headers = {}, body = null, returnJso
     }
 
     const response = await fetch(url, options);
+    const data = returnJson ? await response.json() : await response.text();
     
-    let data;
-    try {
-        data = returnJson ? await response.json() : await response.text();
-        return {
-            status: response.status,
-            data: data
-        };
-    } catch (error) {
-        data = null; // Jika respons kosong atau tidak bisa diparsing
-    }
+    return data;
 }
 
 (async () => {
-    const dataList = getToken('query.txt');
+    const dataList = getToken('dataAkun.txt');
     
     console.log(`-------------------------------`);
     console.log(` |            MENU            | `);
@@ -54,8 +45,8 @@ async function getCURL(url, method = 'GET', headers = {}, body = null, returnJso
 
     console.log('[.] MENJALANKAN AUTO CLEAR TASK, DELAY ' + hours + ' JAM SETELAH CEK ' + dataList.length + ' AKUN...\n');
     while (true) {
-        for (let i = 0; i < dataList.length; i += 100) {
-            const batch = dataList.slice(i, i + 100);
+        for (let i = 0; i < dataList.length; i += 1) {
+            const batch = dataList.slice(i, i + 1);
             const batchPromises = batch.map(async (token, batchIndex) => {
             const no = i + batchIndex + 1;
             // Parsing query string menggunakan URLSearchParams
@@ -67,15 +58,17 @@ async function getCURL(url, method = 'GET', headers = {}, body = null, returnJso
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0',
                 'Accept-Encoding': 'gzip, deflate, br, zstd',
                  'authorization': `tma ${token}`,
-                'origin': 'https://cats-frontend-production.pages.dev'
+                'origin': 'https://api.catshouse.club'
             };
                 const infoAkun = await getCURL('https://api.catshouse.club/user', 'GET', headers);
-                if (infoAkun.status == 200) {
-                   
+                if (infoAkun.name == 'Error') {
+                    logMessage += `[x] TOKEN QUERY_ID MOKAD!!\n`;
+
+                } else {
                     logMessage += `
-[ #.NAME ] : ${infoAkun.data.firstName ? infoAkun.data.firstName : ""} ${infoAkun.data.lastName ? infoAkun.data.lastName : ""} ( ${infoAkun.data.id} )
-[ #.BALLANCE ] : ${number(infoAkun.data.totalRewards)} CATS
-[ #.TG AGE ] : ${number(infoAkun.data.telegramAge)}\n
+[ #.NAME ] : ${infoAkun.firstName ? infoAkun.firstName : ""} ${infoAkun.lastName ? infoAkun.lastName : ""} ( ${infoAkun.id} )
+[ #.BALLANCE ] : ${number(infoAkun.totalRewards)} CATS
+[ #.TG AGE ] : ${number(infoAkun.telegramAge)}\n
 [*] INFORMASI CLAIM TASK:\n`;
 
                 const infoClaim = await getCURL('https://api.catshouse.club/tasks/user', 'GET', headers);
@@ -92,7 +85,7 @@ async function getCURL(url, method = 'GET', headers = {}, body = null, returnJso
                                         logMessage += `[#] CLAIM ${task.title.toUpperCase()} GET ${number(task.rewardPoints)} CATS => BERHASIL!! - `;
                                         logMessage += `${number(infoAkun.totalRewards)} CATS\n`;
                                     }else if (claimTask.success === false) {
-                                        logMessage += `[#] CLAIM ${task.title.toUpperCase()} GET ${number(task.rewardPoints)} CATS => SKIPP!!\n`;
+                                        logMessage += `[#] CLAIM ${task.title.toUpperCase()} GET ${number(task.rewardPoints)} CATS => SKIPP!! NEED JOIN OR MANUAL!!!!\n`;
                                     }
                                 } catch (error) {
                                     logMessage += `[!] ERROR CLAIMING TASK ID ${task.id}: ${error.message}\n`;
@@ -104,8 +97,8 @@ async function getCURL(url, method = 'GET', headers = {}, body = null, returnJso
                 logMessage += `\n[#] SEMUA TASK BERHASIL DICLAIM!! MENUNGGU TASK BARU!!\n`;
 
                     }
-                } else if (infoClaim.status === 400) {
-                    logMessage += `[x] TOKEN QUERY_ID MOKAD!!!!\n`;
+                } else if (infoClaim && infoClaim.name === 'Error') {
+                    logMessage += `[x] CLAIM TOKEN MOKAD!!!!\n`;
                 } else {
                     logMessage += `[x] ERROR!! YGTKTS!!\n`;
                 }
