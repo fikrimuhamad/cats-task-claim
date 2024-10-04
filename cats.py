@@ -16,7 +16,7 @@ def process_user_info(authorization_header, account_number):
         "Origin": "https://cats-frontend.tgapps.store"
     }
 
-    response = requests.get("https://cats-backend-cxblew-prod.up.railway.app/user", headers=headers)
+    response = requests.get("https://api.catshouse.club/user", headers=headers)
 
     if response.status_code == 200:
         data = response.json()
@@ -35,7 +35,7 @@ def process_tasks(authorization_header):
         "Origin": "https://cats-frontend-production.pages.dev"
     }
 
-    response = requests.get("https://cats-backend-cxblew-prod.up.railway.app/tasks/user", headers=headers)
+    response = requests.get("https://api.catshouse.club/tasks/user", headers=headers)
 
     if response.status_code == 200:
         tasks = response.json().get("tasks", [])
@@ -63,7 +63,7 @@ def claim_task(authorization_header, task_id):
         "Origin": "https://cats-frontend-production.pages.dev"
     }
 
-    url = f"https://cats-backend-cxblew-prod.up.railway.app/tasks/{task_id}/complete"
+    url = f"https://api.catshouse.club/tasks/{task_id}/complete"
     response = requests.post(url, headers=headers, json={})
 
     if response.status_code == 200:
